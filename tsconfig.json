@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "strict": true,           /* активирует строгий режим */
+    "strictNullChecks": true, /* если значение может быть null, то это нужно явно указать */
+    "noImplicitAny": true,    /* обязательно нужно везде указывать типы */
+    "strictPropertyInitialization": false,  /* разрешит использовать классы как интерфейсы*/
+    "skipLibCheck": true,                   /* позволяет игнорировать проверку библиотек */
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2017",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
+  }
+}
