@@ -5,6 +5,7 @@ import { AppModule } from './../src/app.module';
 import { CreateReviewDto } from '../src/review/dto/create-review.dto';
 import { disconnect, Types } from 'mongoose';
 import { REVIEW_NOT_FOUND } from '../src/review/review.constants';
+import { AuthDto } from '../src/auth/dto/auth.dto';
 
 const productId = new Types.ObjectId().toHexString();
 
@@ -16,9 +17,16 @@ const testDto: CreateReviewDto = {
 	productId,
 };
 
+// захардкоженые данные для логина
+const loginDto: AuthDto = {
+	login: 'genady@yandex.ru',
+	password: 'gennnady',
+};
+
 describe('AppController (e2e)', () => {
 	let app: INestApplication;
-	let createdId: string; // id созданного объекта
+	let createdId: string;
+	let token: string; // токен, получаемый из тела запроса
 
 	beforeEach(async () => {
 		const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -27,19 +35,23 @@ describe('AppController (e2e)', () => {
 
 		app = moduleFixture.createNestApplication();
 		await app.init();
+
+		// пишем запрос на получение с учётом логина пользователя
+		const { body } = await request(app.getHttpServer())
+			.post('/auth/login') // отправляем запрос на логин
+			.send(loginDto); // отправляем объект с данными для логина
+
+		// получаем токен
+		token = body.access_token;
 	});
 
-	// передаём запрос на создание нового обзора
 	it('/review/create (POST) - success', async () => {
 		return request(app.getHttpServer())
 			.post('/review/create')
-			.send(testDto) // отправляем объект на сервер
+			.send(testDto)
 			.expect(201)
 			.then(({ body }: request.Response) => {
-				// присваиваем id ответа
 				createdId = body._id;
-
-				// описываем, что мы ожидаем наличие значения
 				expect(createdId).toBeDefined();
 			});
 	});
@@ -48,57 +60,48 @@ describe('AppController (e2e)', () => {
 		return request(app.getHttpServer())
 			.post('/review/create')
 			.send({ ...testDto, rating: 0 })
-			.expect(400)
-			.then(({ body }: request.Response) => {
-				console.log(body);
-			});
+			.expect(400);
 	});
 
-	// передаём запрос на получение нового обзора - успешный запрос
 	it('/review/getByProduct/:productId (GET) - success', async () => {
 		return request(app.getHttpServer())
 			.get('/review/getByProduct/' + productId)
 			.expect(200)
 			.then(({ body }: request.Response) => {
-				// так как нам приходит массив из одного элемента, то длина должна быть = 1
 				expect(body.length).toBe(1);
 			});
 	});
 
-	// передаём запрос на получение нового обзора, но ответ будет с ошибкой
 	it('/review/getByProduct/:productId (GET) - fail', async () => {
 		return request(app.getHttpServer())
 			.get('/review/getByProduct/' + new Types.ObjectId().toHexString())
 			.expect(200)
 			.then(({ body }: request.Response) => {
-				// тут нам уже должен прийти пустой массив
 				expect(body.length).toBe(0);
 			});
 	});
 
-	// передаём запрос на удаление нового обзора
 	it('/review/:id (DELETE) - success', () => {
-		return request(app.getHttpServer())
-			.delete('/review/' + createdId)
-			.expect(200);
-	});
-
-	// передаём запрос на удаление нового обзора, но с ошибкой
-	it('/review/:id (DELETE) - fail', () => {
 		return (
 			request(app.getHttpServer())
-				.delete('/review/' + new Types.ObjectId().toHexString())
-				// ожидаем получить 404 NOT_FOUND
-				.expect(404, {
-					statusCode: 404,
-					message: REVIEW_NOT_FOUND,
-				})
+				.delete('/review/' + createdId)
+				// далее устанавливаем сюда заголовок запроса
+				.set('Authorization', 'Bearer ' + token)
+				.expect(200)
 		);
 	});
 
-	// после всех тестов
+	it('/review/:id (DELETE) - fail', () => {
+		return request(app.getHttpServer())
+			.delete('/review/' + new Types.ObjectId().toHexString())
+			.set('Authorization', 'Bearer ' + token)
+			.expect(404, {
+				statusCode: 404,
+				message: REVIEW_NOT_FOUND,
+			});
+	});
+
 	afterAll(() => {
-		// отключаемся от БД
 		disconnect();
 	});
 });
