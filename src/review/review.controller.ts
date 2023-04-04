@@ -26,6 +26,7 @@ export class ReviewController {
 		return this.reviewService.create(dto);
 	}
 
+	@UseGuards(JwtAuthGuard) // используем guard для jwt-запроса
 	@Delete(':id')
 	async delete(@Param('id') id: string) {
 		const deletedDoc = await this.reviewService.delete(id);
@@ -35,7 +36,6 @@ export class ReviewController {
 		}
 	}
 
-	@UseGuards(JwtAuthGuard) // используем guard для jwt-запроса
 	@Get('getByProduct/:productId')
 	async getByProduct(@Param('productId') productId: string) {
 		return this.reviewService.findByProductId(productId);
