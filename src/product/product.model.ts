@@ -1,7 +1,7 @@
 import { Base, TimeStamps } from '@typegoose/typegoose/lib/defaultClasses';
 import { prop } from '@typegoose/typegoose';
 
-class ProductCharacteristic {
+class ProductCharacteristicDto {
 	@prop()
 	name: string;
 
@@ -22,13 +22,10 @@ export class ProductModel extends TimeStamps {
 	price: number;
 
 	@prop()
-	oldPrice: number;
+	oldPrice?: number;
 
 	@prop()
 	credit: number;
-
-	@prop()
-	calculatedRating: number;
 
 	@prop()
 	description: string;
@@ -46,8 +43,8 @@ export class ProductModel extends TimeStamps {
 	tags: string[];
 
 	@prop({
-		type: () => [ProductCharacteristic], // типизируем запрос
+		type: () => [ProductCharacteristicDto], // типизируем запрос
 		_id: false, // отключаем автоматическую генерацию id в массиве
 	})
-	characteristics: ProductCharacteristic[];
+	characteristics: ProductCharacteristicDto[];
 }
