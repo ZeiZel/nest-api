@@ -1,6 +1,15 @@
 import { TopLevelCategory } from '../top-page.model';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+	IsArray,
+	IsDate,
+	IsEnum,
+	IsNumber,
+	IsOptional,
+	IsString,
+	ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+import { prop } from '@typegoose/typegoose';
 
 export class HhDataDto {
 	@IsNumber()
@@ -14,6 +23,9 @@ export class HhDataDto {
 
 	@IsNumber()
 	seniorSalary: number;
+
+	@IsDate()
+	updatedAt: Date; // дата
 }
 
 export class TopPageAdvantagesDto {

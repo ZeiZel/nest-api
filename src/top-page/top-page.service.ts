@@ -3,6 +3,8 @@ import { TopLevelCategory, TopPageModel } from './top-page.model';
 import { InjectModel } from 'nestjs-typegoose';
 import { ModelType } from '@typegoose/typegoose/lib/types';
 import { CreateTopPageDto } from './dto/create-top-page.dto';
+import { addDays } from 'date-fns';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class TopPageService {
@@ -22,23 +24,51 @@ export class TopPageService {
 		return this.topPageModel.findOne({ alias }).exec();
 	}
 
-	// тут мы ищем страницы, которые подпадают под нужную категорию
+	async findAll() {
+		return this.topPageModel.find({}).exec();
+	}
+
 	async findByCategory(firstCategory: TopLevelCategory) {
 		return this.topPageModel
-			.find(
-				// указываем, по какому полю искать
-				{ firstCategory },
-				// указываем, какие поля хотим достать из базы (1 - это достать)
-				{ alias: 1, secondCategory: 1, title: 1 },
-			)
+			.aggregate()
+			.match({
+				firstCategory,
+			})
+			.group({
+				_id: { secondCategory: '$secondCategory' },
+				pages: {
+					$push: { alias: '$alias', title: '$title', _id: '$_id', category: '$category' },
+				},
+			})
 			.exec();
 	}
 
-	async deleteById(id: string) {
-		return this.topPageModel.findByIdAndDelete(id).exec();
+	async findByText(text: string) {
+		return this.topPageModel.find({ $text: { $search: text, $caseSensitive: false } }).exec();
 	}
 
-	async updateById(id: string, dto: CreateTopPageDto) {
+	async deleteById(id: string) {
+		return this.topPageModel.findByIdAndRemove(id).exec();
+	}
+
+	// так же сюда может прилететь не только строка, но и Types.ObjectId
+	async updateById(id: string | Types.ObjectId, dto: CreateTopPageDto) {
 		return this.topPageModel.findByIdAndUpdate(id, dto, { new: true }).exec();
+	}
+
+	// метод, который будет искать все те записи, нужные для обновления
+	async findForHhUpdate(date: Date) {
+		return this.topPageModel
+			.find({
+				firstCategory: 0,
+				// условие на выборку даты
+				$or: [
+					// если есть запись даты обновления, то выполняем поиск
+					{ 'hh.updatedAt': { $lt: addDays(date, -1) } },
+					// если даты обновления нет
+					{ 'hh.updatedAt': { $exists: false } },
+				],
+			})
+			.exec();
 	}
 }
